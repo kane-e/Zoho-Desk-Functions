@@ -1,0 +1,43 @@
+orgId = "5402";
+keyword1 = "unsub";
+keyword2 = "mailing list";
+sendMail = false;
+// JSON response
+ticketInfo = zoho.desk.getRecordById(orgId,"tickets",TicketID);
+subj = ticketInfo.get("subject");
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",TicketID).get("data").toList();
+threadId = threads.getJSON("id");
+// Plain text response
+ticketText = invokeurl
+[
+	url :"https://desk.zoho.com/api/v1/tickets/" + TicketID + "/latestThread?include=plainText"
+	type :GET
+	connection:"zohodesk"
+];
+messageBody = ticketText.getJSON("plainText");
+// do not close ticket if the ticket includes automated response
+if(messageBody.contains("Thank you for reaching out. The emails you are receiving are invites to join Liscio.  Liscio is an invite-only platform used by firms to communicate and collaborate with clients in a secure and convenient environment."))
+{
+	sendMail = false;
+}
+else if((subj.containsIgnoreCase(keyword1) || subj.containsIgnoreCase(keyword2)) && messageBody.containsIgnoreCase(keyword1))
+{
+	sendMail = true;
+}
+else if((subj.containsIgnoreCase(keyword1) || subj.containsIgnoreCase(keyword2)) && messageBody.containsIgnoreCase(keyword2))
+{
+	sendMail = true;
+}
+else if((subj.containsIgnoreCase("contact liscio") || subj.containsIgnoreCase("liscio support")) && messageBody.containsIgnoreCase(keyword1))
+{
+	sendMail = true;
+}
+else if((subj.containsIgnoreCase("contact liscio") || subj.containsIgnoreCase("liscio support")) && messageBody.containsIgnoreCase(keyword2))
+{
+	sendMail = true;
+}
+if(sendMail == true)
+{
+	recordValue = {"status":"Closed"};
+	response = zoho.desk.update(orgId,"tickets",TicketID,recordValue,"zohodesk");
+}
