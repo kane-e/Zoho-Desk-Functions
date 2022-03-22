@@ -1,0 +1,27 @@
+orgId = "717235402";
+TicketInfo = zoho.desk.getRecordById(orgId,"tickets",TicketID);
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",TicketID).get("data").toList("canReply").toLowerCase();
+for each  thread in threads
+{
+	author = thread.getJSON("author").getJSON("name");
+	//get latest response that was not from automated reply
+	if(author.notContains("support"))
+	{
+		responseDate = thread.getJSON("createdtime").toDate();
+	}
+}
+//info responseDate;
+currentDate = zoho.currenttime.toDate();
+daysElapsed = workDaysBetween(responseDate,currentDate);
+//info daysElapsed;
+if(daysElapsed == 3)
+{
+	recordValue = {"cf":{"cf_automation":"Pending Customer 3"}};
+	response = zoho.desk.update(orgId,"tickets",TicketID,recordValue,"zohodesk");
+	info "true";
+}
+if(daysElapsed == 7)
+{
+	recordValue = {"cf":{"cf_automation":"Pending Customer 7"}};
+	response = zoho.desk.update(orgId,"tickets",TicketID,recordValue,"zohodesk");
+}
