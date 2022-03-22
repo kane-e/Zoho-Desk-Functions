@@ -1,4 +1,4 @@
-orgId = "717235402";
+orgId = "35402";
 threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",ticketId).get("data").toList();
 userEmail = threads.getJson("author").getJson("email");
 sendMail = false;
