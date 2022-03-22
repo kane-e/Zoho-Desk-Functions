@@ -1,0 +1,29 @@
+orgId = "5402";
+sendMail = false;
+// JSON response
+ticketInfo = zoho.desk.getRecordById(orgId,"tickets",TicketID);
+subj = ticketInfo.get("subject");
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",TicketID).get("data").toList();
+threadId = threads.getJSON("id");
+// Plain text response
+T_Info = invokeurl
+[
+	url :"https://desk.zoho.com/api/v1/tickets/" + TicketID + "/latestThread?include=plainText"
+	type :GET
+	connection:"zohodesk"
+];
+plainText = T_Info.getJSON("plainText").toLowerCase();
+//info plainText;
+if((subj.containsIgnoreCase("liscioweb") || subj.containsIgnoreCase("liscio support") || subj.containsIgnoreCase("contact liscio")) && plainText.containsIgnoreCase("subject: message body: --"))
+{
+	sendMail = true;
+}
+else if((subj.containsIgnoreCase("liscioweb") || subj.containsIgnoreCase("liscio support") || subj.containsIgnoreCase("contact liscio")) && plainText.containsIgnoreCase("forwarded message") && plainText.containsIgnoreCase("from:") && plainText.containsIgnoreCase("url:"))
+{
+	sendMail = true;
+}
+if(sendMail == true)
+{
+	recordValue = {"status":"Closed"};
+	response = zoho.desk.update(orgId,"tickets",TicketID,recordValue,"zohodesk");
+}
