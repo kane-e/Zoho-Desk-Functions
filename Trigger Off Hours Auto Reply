@@ -1,0 +1,97 @@
+orgId = "717235402";
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",ticketId).get("data").toList();
+userEmail = threads.getJson("author").getJson("email");
+sendMail = false;
+Timing = {"Sunday":{"nil","nil"},"Monday":{"07:55:00","21:01:00"},"Tuesday":{"07:55:00","21:01:00"},"Wednesday":{"07:55:00","21:01:00"},"Thursday":{"07:55:00","21:01:00"},"Friday":{"07:55:00","21:01:00"},"Saturday":{"nil","nil"}};
+ticketDetails = zoho.desk.getRecordById(orgId.toLong(),"tickets",ticketId);
+//info ticketDetails;
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",ticketId).get("data").toList();
+createdTime = threads.getJSON("createdTime");
+unadjustedTime = createdTime.subText(0,10) + " " + createdTime.subText(11,19);
+ticketCreatedTime = unadjustedTime.toString("yyyy-MM-d H:mm:ss","America/New_York");
+info ticketCreatedTime;
+day = ticketCreatedTime.getDayOfWeek();
+ticketCreatedHour = ticketCreatedTime.getHour();
+//info ticketCreatedHour;
+ticketCreatedMinute = ticketCreatedTime.getMinutes();
+ticketCreatedSecond = ticketCreatedTime.getSeconds();
+totalCreatedTimeInSeconds = ticketCreatedHour * 3600 + ticketCreatedMinute * 60 + ticketCreatedSecond;
+//info totalCreatedTimeInSeconds;
+businessDay = Timing.keys().get(day - 1);
+//info businessDay;
+businessTime = Timing.get(businessDay);
+//info businessTime;
+startTime = businessTime.get(0);
+//info startTime;
+endTime = businessTime.get(1);
+//don't send off hours email if unsubscribe request
+keyword1 = "unsub";
+// short for unsubscribe - common for users make typos in last half of word
+keyword2 = "mailing list";
+sendMail = false;
+// JSON response
+subj = ticketDetails.get("subject");
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",ticketId).get("data").toList();
+threadId = threads.getJSON("id");
+// Plain text response
+ticketText = invokeurl
+[
+	url :"https://desk.zoho.com/api/v1/tickets/" + ticketId + "/latestThread?include=plainText"
+	type :GET
+	connection:"zohodesk"
+];
+messageBody = ticketText.getJSON("plainText");
+if((subj.containsIgnoreCase(keyword1) || subj.containsIgnoreCase(keyword2)) && messageBody.containsIgnoreCase(keyword1))
+{
+	sendMail = false;
+}
+else if((subj.containsIgnoreCase(keyword1) || subj.containsIgnoreCase(keyword2)) && messageBody.containsIgnoreCase(keyword2))
+{
+	sendMail = false;
+}
+else if((subj.containsIgnoreCase("contact liscio") || subj.containsIgnoreCase("liscio support")) && messageBody.containsIgnoreCase(keyword1))
+{
+	sendMail = false;
+}
+else if((subj.containsIgnoreCase("contact liscio") || subj.containsIgnoreCase("liscio support")) && messageBody.containsIgnoreCase(keyword2))
+{
+	sendMail = false;
+}
+else if(userEmail == "donotreply@liscio.me" || userEmail == "jira@liscio.atlassian.net" || userEmail == "tim@liscio.me" || userEmail == "sales@liscio.me" || userEmail == "notify@ringcentral.com" || userEmail.containsIgnoreCase("instagram") || userEmail.containsIgnoreCase("facebook"))
+{
+	sendMail = false;
+}
+else if(ticketCreatedTime.contains("2021-12-31"))
+{
+	sendMail = true;
+}
+else if(startTime.equals("nil"))
+{
+	sendMail = true;
+}
+else
+{
+	fromHour = startTime.toList(":").get(0).toLong();
+	fromMinute = startTime.toList(":").get(1).toLong();
+	fromSecond = startTime.toList(":").get(2).toLong();
+	fromTotalTimeInSeconds = fromHour * 3600 + fromMinute * 60 + fromSecond;
+	//info fromTotalTimeInSeconds;
+	toHour = endTime.toList(":").get(0).toLong();
+	toMinute = endTime.toList(":").get(1).toLong();
+	toSecond = endTime.toList(":").get(2).toLong();
+	toTotalTimeInSeconds = toHour * 3600 + toMinute * 60 + toSecond;
+	if(!(totalCreatedTimeInSeconds >= fromTotalTimeInSeconds && totalCreatedTimeInSeconds <= toTotalTimeInSeconds))
+	{
+		sendMail = true;
+	}
+}
+if(sendMail == true)
+{
+	info "true";
+	recordValue = {"cf":{"cf_automation":"Off Hours"}};
+	response = zoho.desk.update(orgId,"tickets",ticketId,recordValue,"zohodesk");
+}
+else
+{
+	info "false";
+}
