@@ -1,4 +1,4 @@
-orgId = "717235402";
+orgId = "5402";
 TicketInfo = zoho.desk.getRecordById(orgId,"tickets",TicketID);
 threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",TicketID).get("data").toList("canReply").toLowerCase();
 for each  thread in threads
