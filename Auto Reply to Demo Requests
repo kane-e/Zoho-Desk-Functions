@@ -1,0 +1,39 @@
+orgId = "5402";
+sendMail = false;
+// JSON response
+ticketInfo = zoho.desk.getRecordById(orgId,"tickets",TicketID);
+subj = ticketInfo.get("subject");
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",TicketID).get("data").toList();
+threadId = threads.getJSON("id");
+// Plain text response
+T_Info = invokeurl
+[
+	url :"https://desk.zoho.com/api/v1/tickets/" + TicketID + "/latestThread?include=plainText"
+	type :GET
+	connection:"zohodesk"
+];
+plainText = T_Info.getJSON("plainText").toLowerCase();
+//info plainText;
+email = plainText.replaceall("(([a-zA-Z0-9+._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(.))","$2|");
+emailList = email.toList("|");
+emailList.removeAll({""});
+contactEmail = emailList.subList(2,3);
+if((subj.containsIgnoreCase("liscioweb") || subj.containsIgnoreCase("liscio support") || subj.containsIgnoreCase("contact liscio")) && plainText.containsIgnoreCase("subject: message body: --"))
+{
+	sendMail = true;
+}
+else if((subj.containsIgnoreCase("liscioweb") || subj.containsIgnoreCase("liscio support") || subj.containsIgnoreCase("contact liscio")) && plainText.containsIgnoreCase("forwarded message") && plainText.containsIgnoreCase("from:") && plainText.containsIgnoreCase("url:"))
+{
+	sendMail = true;
+}
+if(sendMail == true)
+{
+	sendmail
+	[
+		from :"support@liscio.me"
+		to :contactEmail
+		bcc :"emma@liscio.me"
+		subject :"Liscio Demo Request"
+		message :"<p>Hi,</p> <p>This is Liscio Support. We received your demo request and wanted to reach out to see if you need help with anything, such as logging in. </p><p>Thanks so much,</p><p>The Liscio Support Team</p>"
+	]
+}
