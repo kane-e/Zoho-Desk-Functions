@@ -1,0 +1,68 @@
+orgId = "71723";
+keyword1 = "unsub";
+// short for unsubscribe - common for users make typos in last half of word
+keyword2 = "mailing list";
+sendMail = false;
+// JSON response
+ticketInfo = zoho.desk.getRecordById(orgId,"tickets",TicketID);
+subj = ticketInfo.get("subject");
+// Plain text response
+ticketText = invokeurl
+[
+	url :"https://desk.zoho.com/api/v1/tickets/" + TicketID + "/latestThread?include=plainText"
+	type :GET
+	connection:"zohodesk"
+];
+messageBody = ticketText.getJSON("plainText").toLowerCase();
+// to get user email from tickets forwarded from sales
+email = messageBody.replaceall("(([a-zA-Z0-9+._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(.))","$2|");
+emailList = email.toList("|");
+emailList.removeAll({""});
+// search records in CRM to ensure auto reply not sent to firm users 
+senderEmail = ticketInfo.getJSON("email");
+crmContact = zoho.crm.searchRecords("Contacts","(Email:equals:" + senderEmail + ")");
+if(crmContact == senderEmail)
+{
+	sendMail = false;
+	info "f";
+}
+// don't send if user is replying to previous unsubscribe auto response
+else if(messageBody.containsIgnoreCase("The emails you are receiving are invites to join Liscio. Liscio is an invite-only platform used by firms to communicate and collaborate with clients in a secure and convenient environment"))
+{
+	sendMail = false;
+	info "false";
+}
+// trigger templated reply to tickets that come directly from users
+else if((subj.containsIgnoreCase(keyword1) || subj.containsIgnoreCase(keyword2)) && messageBody.containsIgnoreCase(keyword1))
+{
+	recordValue = {"cf":{"cf_automation":"Unsubscribe"}};
+	response = zoho.desk.update(orgId,"tickets",TicketID,recordValue,"zohodesk");
+}
+else if((subj.containsIgnoreCase(keyword1) || subj.containsIgnoreCase(keyword2)) && messageBody.containsIgnoreCase(keyword2))
+{
+	recordValue = {"cf":{"cf_automation":"Unsubscribe"}};
+	response = zoho.desk.update(orgId,"tickets",TicketID,recordValue,"zohodesk");
+}
+// send html email to requests forwarded from sales
+else if((subj.containsIgnoreCase("contact liscio") || subj.containsIgnoreCase("liscio support")) && messageBody.containsIgnoreCase(keyword1))
+{
+	userEmail = emailList.subList(2,3);
+	sendMail = true;
+	info "true";
+}
+else if((subj.containsIgnoreCase("contact liscio") || subj.containsIgnoreCase("liscio support")) && messageBody.containsIgnoreCase(keyword2))
+{
+	userEmail = emailList.subList(2,3);
+	sendMail = true;
+}
+if(sendMail == true)
+{
+	sendmail
+	[
+		from :"support@liscio.me"
+		to :userEmail
+		bcc :"emma@liscio.me"
+		subject :"Liscio Unsubscribe Request"
+		message :"<p>Hello,</p><p>Thank you for reaching out. The emails you are receiving are invites to join Liscio.  Liscio is an invite-only platform used by firms to communicate and collaborate with clients in a secure and convenient environment.</p><p>If you feel that you should not be receiving these emails, please contact your firm directly.  If you would like Liscio Support to reach out on your behalf, please respond to this email with the name of the firm listed on the emails you are receiving.</p> <p>Thank you,</p><p>The Liscio Support Team</p>"
+	]
+}
