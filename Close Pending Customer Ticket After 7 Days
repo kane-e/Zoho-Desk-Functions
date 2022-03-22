@@ -1,0 +1,12 @@
+orgId = "35402";
+TicketInfo = zoho.desk.getRecordById(orgId,"tickets",TicketID);
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",TicketID).get("data").toList();
+responseDate = threads.getJSON("createdTime").toDate();
+currentDate = zoho.currenttime.toDate();
+daysElapsed = days360(responseDate,currentDate);
+//info daysElapsed;
+if(daysElapsed == 7)
+{
+	recordValue = {"status":"Closed"};
+	response = zoho.desk.update(orgId,"tickets",TicketID,recordValue,"zohodesk");
+}
