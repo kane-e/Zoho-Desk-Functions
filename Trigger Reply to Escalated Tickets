@@ -1,0 +1,22 @@
+orgId = "5402";
+TicketInfo = zoho.desk.getRecordById(orgId,"tickets",TicketID);
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",TicketID).get("data").toList("canReply").toLowerCase();
+//info threads;
+for each  thread in threads
+{
+	author = thread.getJSON("author").getJSON("name");
+	//get latest response that was not from automated reply
+	if(author.notContains("support"))
+	{
+		responseDate = thread.getJSON("createdtime").toDate();
+	}
+}
+// info responseDate;
+currentDate = zoho.currenttime.toDate();
+daysElapsed = workDaysBetween(responseDate,currentDate);
+//info daysElapsed;
+if(daysElapsed == 3 || daysElapsed == 10 || daysElapsed == 17 || daysElapsed == 24)
+{
+	recordValue = {"cf":{"cf_automation":"Escalated"}};
+	response = zoho.desk.update(orgId,"tickets",TicketID,recordValue,"zohodesk");
+}
