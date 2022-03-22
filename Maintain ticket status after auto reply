@@ -1,0 +1,43 @@
+orgId = "5402";
+ticketInfo = zoho.desk.getRecordById(orgId,"tickets",ticketId);
+//info ticketInfo;
+automationField = ticketInfo.getJSON("customFields");
+//info automationField.contains("Escalated");
+threads = zoho.desk.getRelatedRecords(orgId,"threads","tickets",ticketId).get("data").toList();
+latestThread = threads.get(0);
+//info latestThread;
+toAddress = latestThread.getJSON("to");
+fromAddress = latestThread.getJSON("fromEmailAddress");
+if(toAddress.contains("support@liscio.me") && fromAddress.contains("support@liscio.me"))
+{
+	if(automationField.contains("Escalated"))
+	{
+		recordValue = {"status":"Escalated"};
+		response = zoho.desk.update(orgId,"tickets",ticketId,recordValue,"zohodesk");
+	}
+	if(automationField.contains("On Hold"))
+	{
+		recordValue = {"status":"On Hold"};
+		response = zoho.desk.update(orgId,"tickets",ticketId,recordValue,"zohodesk");
+	}
+	if(automationField.contains("Pending Customer 3"))
+	{
+		recordValue = {"status":"Pending Customer"};
+		response = zoho.desk.update(orgId,"tickets",ticketId,recordValue,"zohodesk");
+	}
+	if(automationField.contains("Pending Customer 7"))
+	{
+		recordValue = {"status":"Closed"};
+		response = zoho.desk.update(orgId,"tickets",ticketId,recordValue,"zohodesk");
+	}
+	if(automationField.contains("Unsubscribe"))
+	{
+		recordValue = {"status":"Closed"};
+		response = zoho.desk.update(orgId,"tickets",ticketId,recordValue,"zohodesk");
+	}
+	if(automationField.contains("Demo Request"))
+	{
+		recordValue = {"status":"Closed"};
+		response = zoho.desk.update(orgId,"tickets",ticketId,recordValue,"zohodesk");
+	}
+}
